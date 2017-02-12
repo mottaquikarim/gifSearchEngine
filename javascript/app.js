@@ -7,6 +7,62 @@
 
 	const button = document.querySelector('.js-search');
 	const input = document.querySelector('.js-gif-input');
+	const container = document.querySelector('.js-data');
+
+	const onResponse = (response) => {
+		const searchTerm = response.searchTerm;
+
+		console.log('look ma! im in a callback', response);
+		// clear stuff inside the container
+		container.innerHTML = "";
+
+		for (const imageData of response.data) {
+			const imageUrl = imageData.images.original.url;
+
+			const imageTag = document.createElement('img');
+			imageTag.src = imageUrl;
+			// ALTERNATE WAY:
+			// imageTag.setAttribute('src', imageUrl);
+
+			// todo:
+			// 1. create div [DONE]
+			// 2. add class column to it [DONE]
+			// 3. append imageTag to it [DONE]
+			// 4. add div to container []
+
+			// create empty div
+			const div = document.createElement('div');
+			// add class to it
+			div.classList.add('column');	
+			// add the img for gif to div
+			div.appendChild(imageTag);
+			// add div to container
+			container.appendChild(div);
+		}
+
+		const btnContainer = document.createElement('div');
+		btnContainer.classList.add('four', 'columns');
+
+		const nextBtn = document.createElement('button');
+		nextBtn.innerHTML = "Next";
+		nextBtn.classList.add('ui', 'button', 'fluid', 'js-next-btn');
+
+		nextBtn.addEventListener('click', (e) => {
+			// call gifSearch();
+			console.log(response.pagination.offset, response.pagination.offset + response.pagination.count)
+			const count = response.pagination.count;
+			const offset = count + response.pagination.offset;
+			
+			gifSearch(searchTerm, onResponse, count, offset)
+		});
+
+		btnContainer.appendChild(nextBtn);
+		container.appendChild(btnContainer);
+
+		input.value = "";
+		input.removeAttribute('disabled');
+		button.removeAttribute('disabled');
+	}; // this makes the function reusable
 
 	function validateSearch() {
 		const searchTerm = input.value;
@@ -20,12 +76,9 @@
 		button.setAttribute('disabled', 'disabled');
 
 		// IF WE MAKE IT HERE, then we should do an ajax call, yo
-		gifSearch(searchTerm, (response) => {
-			console.log('look ma! im in a callback')
-			input.value = "";
-			input.removeAttribute('disabled');
-			button.removeAttribute('disabled');
-		});
+		// onResponse is pulled out from this function
+		// so that we could *potentially maybe* reuse
+		gifSearch(searchTerm, onResponse, 2);
 	}
 
 	/*
@@ -63,7 +116,6 @@
 
 		console.log('ABOUT TO MAKE REQUEST TO URL...');
 		console.log(url);
-		console.log('LOL')
 
 		const http = new XMLHttpRequest();
 
@@ -72,7 +124,10 @@
 			const isReqDone = http.status === 200;
 
 			if (isReqReady && isReqDone) {
-      			callback(JSON.parse(http.responseText));
+				const data = JSON.parse(http.responseText);
+				data.searchTerm = q;
+
+      			callback(data);
       		} // if request is complete, show the goodz
 		}
 
@@ -86,5 +141,7 @@
 			validateSearch();
 		}
 	});
+
+
 
 })();
